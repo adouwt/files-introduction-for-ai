@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "files-introduction-for-ai": {
+      "source": "adouwt/files-introduction-for-ai",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "e306dd6502c5da3c34b4f690c9a079d2669af0dbb7374a349f61c5b4fc889c80"
+    }
+  }
+}

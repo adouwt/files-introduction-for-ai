@@ -110,6 +110,12 @@ npm adduser --registry http://npm.itodd.wang/
 npm publish --registry http://npm.itodd.wang/
 ```
 
+## Skill 平台
+
+本项目已发布到 skill.sh 平台，可通过以下链接安装：
+
+https://skills.sh/adouwt/files-introduction-for-ai
+
 ## 配置文件
 
 见 `.ai-indexer.config.json`：
