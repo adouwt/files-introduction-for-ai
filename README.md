@@ -45,9 +45,23 @@ npx ai-file-indexer init
 
 3. 准备环境变量
 
+支持两种方式：
+
+**方式一：环境变量**
+
 ```bash
 export QWEN_API_KEY="你的通义千问API Key"
 ```
+
+**方式二：.env 文件（推荐）**
+
+在项目根目录创建 `.env` 文件：
+
+```
+QWEN_API_KEY=你的通义千问API Key
+```
+
+CLI 会自动加载项目根目录的 `.env` 文件。
 
 4. 安装 Git hook
 

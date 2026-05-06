@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import 'dotenv/config';
 import process from 'node:process';
 import { runIndexer } from '../scripts/ai-indexer.js';
 import { setupHooks } from '../scripts/setup-hooks.js';

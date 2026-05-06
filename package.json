@@ -4,6 +4,9 @@
   "description": "AI code file indexer CLI with git incremental/full indexing",
   "author": "todd.wang <todd.wang@itodd.wang>",
   "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/adouwt/files-introduction-for-ai.git"
