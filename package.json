@@ -4,7 +4,27 @@
   "description": "AI code file indexer CLI with git incremental/full indexing",
   "author": "todd.wang <todd.wang@itodd.wang>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adouwt/files-introduction-for-ai.git"
+  },
+  "bugs": {
+    "url": "https://github.com/adouwt/files-introduction-for-ai/issues"
+  },
+  "homepage": "https://github.com/adouwt/files-introduction-for-ai#readme",
   "type": "module",
+  "keywords": [
+    "ai",
+    "code-indexer",
+    "git",
+    "incremental-index",
+    "full-index",
+    "qwen",
+    "llm",
+    "code-analysis",
+    "codebase",
+    "pre-commit"
+  ],
   "bin": {
     "ai-file-indexer": "bin/cli.js"
   },
