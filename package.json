@@ -1,6 +1,6 @@
 {
   "name": "files-introduction-for-ai",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "AI code file indexer CLI with git incremental/full indexing",
   "author": "todd.wang <todd.wang@itodd.wang>",
   "license": "MIT",

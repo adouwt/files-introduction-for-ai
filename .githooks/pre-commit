@@ -1,7 +1,0 @@
-#!/bin/sh
-
-echo "[ai-index] running incremental index..."
-node bin/cli.js index --incremental --stage-output || true
-
-# 非阻塞：无论索引结果如何，都不拦截提交
-exit 0
