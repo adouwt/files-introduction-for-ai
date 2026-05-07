@@ -20,6 +20,15 @@
 
 `js`, `ts`, `tsx`, `vue`, `py`, `java`, `go`, `md`
 
+## 与 AI IDE 的配合（Cursor / Windsurf / Codex）
+
+`.ai` 目录中的索引文件属于“项目上下文文件”，可被 AI IDE 当作普通文件读取与引用，但通常不会自动作为平台规则目录生效。
+
+- 可读取：`Cursor`、`Windsurf`、`Codex` 一般都可读取 `.ai/*.md`、`.ai/*.json`
+- 非规则目录：`.ai` 不是这些工具默认的规则/记忆目录
+- 建议方式：在对话中显式引用，如 `@.ai/module-index.md`、`@.ai/file-index.md`
+- 如需“自动规则化”生效，请将规则同步到对应工具的约定目录（如 `.cursor/`、`.windsurf/`）
+
 ## 快速开始
 
 1. 安装（在目标项目）
