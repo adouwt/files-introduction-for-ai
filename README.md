@@ -54,11 +54,17 @@ npx ai-file-indexer init
 
 3. 准备环境变量
 
-支持两种方式：
+支持两种 LLM 提供商：DeepSeek（优先）和通义千问。
+
+**优先级**：先读取 `DEEPSEEK_API_KEY`，再读取 `QWEN_API_KEY`，都读取不到则走默认规则。
 
 **方式一：环境变量**
 
 ```bash
+# DeepSeek（优先）
+export DEEPSEEK_API_KEY="你的DeepSeek API Key"
+
+# 或通义千问
 export QWEN_API_KEY="你的通义千问API Key"
 ```
 
@@ -67,6 +73,10 @@ export QWEN_API_KEY="你的通义千问API Key"
 在项目根目录创建 `.env` 文件：
 
 ```
+# DeepSeek（优先）
+DEEPSEEK_API_KEY=你的DeepSeek API Key
+
+# 或通义千问
 QWEN_API_KEY=你的通义千问API Key
 ```
 
@@ -135,8 +145,11 @@ https://skills.sh/adouwt/files-introduction-for-ai
 - `moduleJsonOutput`: 模块结构化索引文件名
 - `llm.baseUrl`: 通义千问兼容接口地址
 - `llm.model`: 默认 `qwen-plus`
+- `llm.deepseek.baseUrl`: DeepSeek 接口地址（默认 `https://api.deepseek.com`）
+- `llm.deepseek.model`: DeepSeek 模型（默认 `deepseek-v4-flash`）
 
 ## 注意
 
-- 若未设置 `QWEN_API_KEY`，脚本会降级为启发式摘要，不会阻塞流程。
+- 若未设置 `DEEPSEEK_API_KEY` 或 `QWEN_API_KEY`，脚本会降级为启发式摘要，不会阻塞流程。
+- DeepSeek 官方文档已标注 `deepseek-chat` / `deepseek-reasoner` 后续弃用，建议使用 `deepseek-v4-flash` 或 `deepseek-v4-pro`。
 - 当前方法识别基于正则，可能存在漏检/误检。

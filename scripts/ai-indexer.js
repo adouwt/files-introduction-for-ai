@@ -114,11 +114,11 @@ function extractDependencies(content, filePath) {
   return Array.from(deps).slice(0, 50);
 }
 
-async function callQwenSummarize({ apiKey, baseUrl, model, filePath, language, content, functions, dependencies }) {
+async function callLlmSummarize({ provider, apiKey, baseUrl, model, filePath, language, content, functions, dependencies }) {
   if (!apiKey) {
     return {
       summary: `File ${filePath} in ${language}. Heuristic summary generated without LLM API key.`,
-      purpose: 'No QWEN_API_KEY provided, fallback summary used.',
+      purpose: 'No API key provided, fallback summary used.',
       methodNotes: functions.map((f) => `${f}: function signature extracted by regex.`)
     };
   }
@@ -156,7 +156,7 @@ async function callQwenSummarize({ apiKey, baseUrl, model, filePath, language, c
 
   if (!resp.ok) {
     const text = await resp.text();
-    throw new Error(`Qwen API error ${resp.status}: ${text}`);
+    throw new Error(`${provider} API error ${resp.status}: ${text}`);
   }
 
   const data = await resp.json();
@@ -317,7 +317,27 @@ export async function runIndexer({ mode = 'incremental', stageOutput = false, pr
     return true;
   }
 
-  const apiKey = process.env.QWEN_API_KEY || '';
+  const deepseekApiKey = process.env.DEEPSEEK_API_KEY || '';
+  const qwenApiKey = process.env.QWEN_API_KEY || '';
+  
+  let provider, apiKey, baseUrl, model;
+  
+  if (deepseekApiKey) {
+    provider = 'deepseek';
+    apiKey = deepseekApiKey;
+    baseUrl = config.llm.deepseek?.baseUrl || 'https://api.deepseek.com';
+    model = config.llm.deepseek?.model || 'deepseek-v4-flash';
+  } else if (qwenApiKey) {
+    provider = 'qwen';
+    apiKey = qwenApiKey;
+    baseUrl = config.llm.baseUrl || 'https://dashscope.aliyuncs.com/compatible-mode/v1';
+    model = config.llm.model || 'qwen-plus';
+  } else {
+    provider = 'fallback';
+    apiKey = '';
+    baseUrl = '';
+    model = '';
+  }
   const outDir = path.join(projectRoot, config.outputDir);
   await fs.mkdir(outDir, { recursive: true });
 
@@ -344,10 +364,11 @@ export async function runIndexer({ mode = 'incremental', stageOutput = false, pr
     };
 
     try {
-      llm = await callQwenSummarize({
+      llm = await callLlmSummarize({
+        provider,
         apiKey,
-        baseUrl: config.llm.baseUrl,
-        model: config.llm.model,
+        baseUrl,
+        model,
         filePath: file,
         language,
         content: truncated,
@@ -355,7 +376,7 @@ export async function runIndexer({ mode = 'incremental', stageOutput = false, pr
         dependencies
       });
     } catch (e) {
-      console.warn(`[ai-index] qwen summarize failed for ${file}: ${e.message}`);
+      console.warn(`[ai-index] ${provider} summarize failed for ${file}: ${e.message}`);
     }
 
     results.push({
@@ -372,8 +393,8 @@ export async function runIndexer({ mode = 'incremental', stageOutput = false, pr
   const index = {
     generatedAt: new Date().toISOString(),
     mode,
-    provider: config.llm.provider,
-    model: config.llm.model,
+    provider,
+    model,
     files: results
   };
 

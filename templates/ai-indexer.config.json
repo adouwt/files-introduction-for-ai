@@ -18,7 +18,11 @@
   "llm": {
     "provider": "qwen",
     "baseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1",
-    "model": "qwen-plus"
+    "model": "qwen-plus",
+    "deepseek": {
+      "baseUrl": "https://api.deepseek.com",
+      "model": "deepseek-v4-flash"
+    }
   },
   "maxFileCharsForLlm": 8000
 }
