@@ -24,7 +24,7 @@ Use this skill when:
   - `.ai/file-index.md` - Human-readable file descriptions
   - `.ai/module-index.md` - Module/directory aggregated summaries
   - `.ai/module-index.json` - Structured module index
-- **AI-Powered Descriptions**: Uses Qwen (OpenAI-compatible API) to generate:
+- **AI-Powered Descriptions**: Uses DeepSeek (priority) or Qwen (OpenAI-compatible API) to generate:
   - File function descriptions
   - Method/function explanations
 - **Non-Blocking**: Indexing failures don't block git commits
@@ -48,11 +48,25 @@ This creates:
 - package.json scripts for manual indexing
 
 3. Set up environment variables:
+
+Supports two LLM providers: DeepSeek (priority) and Qwen.
+
+**Priority**: `DEEPSEEK_API_KEY` → `QWEN_API_KEY` → fallback to heuristic rules.
+
 ```bash
+# DeepSeek (priority)
+export DEEPSEEK_API_KEY="your-deepseek-api-key"
+
+# Or Qwen
 export QWEN_API_KEY="your-qwen-api-key"
 ```
+
 Or create a `.env` file in the project root:
 ```
+# DeepSeek (priority)
+DEEPSEEK_API_KEY=your-deepseek-api-key
+
+# Or Qwen
 QWEN_API_KEY=your-qwen-api-key
 ```
 
@@ -95,9 +109,12 @@ Edit `.ai-indexer.config.json` to customize:
 - `moduleJsonOutput`: Module JSON index filename
 - `llm.baseUrl`: Qwen-compatible API endpoint
 - `llm.model`: Model name (default: qwen-plus)
+- `llm.deepseek.baseUrl`: DeepSeek API endpoint (default: https://api.deepseek.com)
+- `llm.deepseek.model`: DeepSeek model (default: deepseek-v4-flash)
 
 ## Notes
 
-- If `QWEN_API_KEY` is not set, the tool falls back to heuristic summarization
+- If `DEEPSEEK_API_KEY` or `QWEN_API_KEY` is not set, the tool falls back to heuristic summarization
+- DeepSeek official docs note that `deepseek-chat` / `deepseek-reasoner` will be deprecated; recommended to use `deepseek-v4-flash` or `deepseek-v4-pro`
 - Method detection uses regex patterns and may have false positives/negatives
 - The tool gracefully handles API failures and won't block your workflow
