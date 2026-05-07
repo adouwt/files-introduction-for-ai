@@ -7,6 +7,12 @@ description: AI code file indexer CLI with git incremental/full indexing, automa
 
 This skill provides a CLI tool that automatically maintains project file indexes during git commits, helping AI agents quickly understand codebases without needing to scan all files each time.
 
+## Important Note
+
+This skill describes a **npm CLI tool** that needs to be installed in target projects. Installing via `npx skills add` only registers this skill with AI agents - it does **not** automatically install the npm package or configure the project.
+
+To actually use this tool in a project, follow the **Installation** steps below.
+
 ## When to Use
 
 Use this skill when:
