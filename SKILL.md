@@ -30,6 +30,9 @@ Use this skill when:
   - `.ai/file-index.md` - Human-readable file descriptions
   - `.ai/module-index.md` - Module/directory aggregated summaries
   - `.ai/module-index.json` - Structured module index
+- **IDE Skill Auto Sync** (when IDE folder exists)
+  - `.cursor/skills/files-introduction-for-ai/SKILL.md`
+  - `.windsurf/skills/files-introduction-for-ai/SKILL.md`
 - **AI-Powered Descriptions**: Uses DeepSeek (priority) or Qwen (OpenAI-compatible API) to generate:
   - File function descriptions
   - Method/function explanations
@@ -89,6 +92,13 @@ npm run ai:index:full
 ## Usage
 
 After setup, the pre-commit hook automatically runs incremental indexing when you commit changes.
+
+IDE behavior:
+- If `.cursor` or `.windsurf` exists in project root, tool writes:
+  - `.cursor/skills/files-introduction-for-ai/SKILL.md`
+  - `.windsurf/skills/files-introduction-for-ai/SKILL.md`
+  and skips `.ai` output generation.
+- If neither exists, tool follows default behavior and generates `.ai/*` index files.
 
 **Manual commands:**
 ```bash

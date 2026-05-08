@@ -4,9 +4,14 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 import { spawnSync } from 'node:child_process';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const DEFAULT_CONFIG_FILE = '.ai-indexer.config.json';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const PACKAGE_SKILL_PATH = path.join(__dirname, '..', 'SKILL.md');
+const PACKAGE_SKILL_DIR_NAME = 'files-introduction-for-ai';
+const PACKAGE_SKILL_FILE_NAME = 'SKILL.md';
 
 function parseArgs(argv) {
   const args = new Set(argv.slice(2));
@@ -196,6 +201,55 @@ function toMd(index) {
   return `${lines.join('\n')}\n`;
 }
 
+async function fileExists(filePath) {
+  try {
+    await fs.access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function ensureIdeSkills(projectRoot) {
+  const ideDirs = ['.windsurf', '.cursor', '.vscode', '.codex', '.cloudcode'];
+  const existingIdeDirs = [];
+
+  for (const ideDir of ideDirs) {
+    const idePath = path.join(projectRoot, ideDir);
+    if (await fileExists(idePath)) {
+      existingIdeDirs.push(idePath);
+    }
+  }
+
+  if (!existingIdeDirs.length) {
+    return { hasIde: false };
+  }
+
+  let skillContent = '';
+  try {
+    skillContent = await fs.readFile(PACKAGE_SKILL_PATH, 'utf-8');
+  } catch (e) {
+    console.warn(`[ai-index] load SKILL.md failed: ${e.message}`);
+    return { hasIde: true };
+  }
+
+  for (const idePath of existingIdeDirs) {
+    const skillsDir = path.join(idePath, 'skills', PACKAGE_SKILL_DIR_NAME);
+    const targetSkillPath = path.join(skillsDir, PACKAGE_SKILL_FILE_NAME);
+    if (await fileExists(targetSkillPath)) continue;
+
+    try {
+      await fs.mkdir(skillsDir, { recursive: true });
+      await fs.writeFile(targetSkillPath, skillContent, 'utf-8');
+      console.log(`[ai-index] created ${path.relative(projectRoot, targetSkillPath)}`);
+    } catch (e) {
+      console.warn(`[ai-index] write IDE skill failed (${path.relative(projectRoot, targetSkillPath)}): ${e.message}`);
+    }
+  }
+
+  return { hasIde: true };
+}
+
 function buildModuleIndex(index) {
   const moduleMap = new Map();
 
@@ -338,6 +392,13 @@ export async function runIndexer({ mode = 'incremental', stageOutput = false, pr
     baseUrl = '';
     model = '';
   }
+
+  const { hasIde } = await ensureIdeSkills(projectRoot);
+  if (hasIde) {
+    console.log('[ai-index] IDE directory detected, skip .ai output generation.');
+    return true;
+  }
+
   const outDir = path.join(projectRoot, config.outputDir);
   await fs.mkdir(outDir, { recursive: true });
 

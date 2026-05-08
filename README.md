@@ -11,6 +11,9 @@
   - `.ai/file-index.md`
   - `.ai/module-index.md`（目录/模块聚合摘要）
   - `.ai/module-index.json`（目录/模块结构化索引）
+- IDE Skill 自动同步（检测到 IDE 目录时）：
+  - `.cursor/skills/files-introduction-for-ai/SKILL.md`
+  - `.windsurf/skills/files-introduction-for-ai/SKILL.md`
 - 接入通义千问（OpenAI 兼容接口）生成：
   - 文件功能描述
   - 方法/函数说明
@@ -21,6 +24,13 @@
 `js`, `ts`, `tsx`, `vue`, `py`, `java`, `go`, `md`
 
 ## 与 AI IDE 的配合（Cursor / Windsurf / Codex）
+
+脚本会先检测项目根目录是否存在 `.cursor` 或 `.windsurf`：
+
+- 若存在：自动写入对应 skill 文件，并跳过 `.ai` 索引产物生成
+  - `.cursor/skills/files-introduction-for-ai/SKILL.md`
+  - `.windsurf/skills/files-introduction-for-ai/SKILL.md`
+- 若不存在：按默认行为生成 `.ai` 目录中的索引文件
 
 `.ai` 目录中的索引文件属于“项目上下文文件”，可被 AI IDE 当作普通文件读取与引用，但通常不会自动作为平台规则目录生效。
 
