@@ -4,14 +4,12 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 import { spawnSync } from 'node:child_process';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { pathToFileURL } from 'node:url';
 
 const DEFAULT_CONFIG_FILE = '.ai-indexer.config.json';
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const PACKAGE_SKILL_PATH = path.join(__dirname, '..', 'SKILL.md');
 const PACKAGE_SKILL_DIR_NAME = 'files-introduction-for-ai';
 const PACKAGE_SKILL_FILE_NAME = 'SKILL.md';
+const LLM_CONCURRENCY = 3;
 
 function parseArgs(argv) {
   const args = new Set(argv.slice(2));
@@ -210,7 +208,7 @@ async function fileExists(filePath) {
   }
 }
 
-async function ensureIdeSkills(projectRoot) {
+async function getExistingIdeDirs(projectRoot) {
   const ideDirs = ['.windsurf', '.cursor', '.vscode', '.codex', '.cloudcode'];
   const existingIdeDirs = [];
 
@@ -221,22 +219,13 @@ async function ensureIdeSkills(projectRoot) {
     }
   }
 
-  if (!existingIdeDirs.length) {
-    return { hasIde: false };
-  }
+  return existingIdeDirs;
+}
 
-  let skillContent = '';
-  try {
-    skillContent = await fs.readFile(PACKAGE_SKILL_PATH, 'utf-8');
-  } catch (e) {
-    console.warn(`[ai-index] load SKILL.md failed: ${e.message}`);
-    return { hasIde: true };
-  }
-
-  for (const idePath of existingIdeDirs) {
+async function writeIdeSkills(projectRoot, ideDirs, skillContent) {
+  for (const idePath of ideDirs) {
     const skillsDir = path.join(idePath, 'skills', PACKAGE_SKILL_DIR_NAME);
     const targetSkillPath = path.join(skillsDir, PACKAGE_SKILL_FILE_NAME);
-    if (await fileExists(targetSkillPath)) continue;
 
     try {
       await fs.mkdir(skillsDir, { recursive: true });
@@ -246,8 +235,6 @@ async function ensureIdeSkills(projectRoot) {
       console.warn(`[ai-index] write IDE skill failed (${path.relative(projectRoot, targetSkillPath)}): ${e.message}`);
     }
   }
-
-  return { hasIde: true };
 }
 
 function buildModuleIndex(index) {
@@ -347,6 +334,54 @@ async function stageOutputs(outputDir, jsonOutput, mdOutput, moduleMdOutput, mod
   }
 }
 
+async function processFile(file, projectRoot, config, provider, apiKey, baseUrl, model) {
+  const abs = path.join(projectRoot, file);
+  let content = '';
+  try {
+    content = await fs.readFile(abs, 'utf-8');
+  } catch {
+    return null;
+  }
+
+  const language = getLanguage(file);
+  const functions = extractFunctions(content, file);
+  const dependencies = extractDependencies(content, file);
+  const truncated = content.slice(0, config.maxFileCharsForLlm || 8000);
+
+  let llm = {
+    summary: `File ${file} (${language}).`,
+    purpose: 'Auto-generated fallback purpose.',
+    methodNotes: functions.map((f) => `${f}: extracted method`)
+  };
+
+  try {
+    console.log(`[ai-index] summarizing ${file} with ${provider}`);
+    llm = await callLlmSummarize({
+      provider,
+      apiKey,
+      baseUrl,
+      model,
+      filePath: file,
+      language,
+      content: truncated,
+      functions,
+      dependencies
+    });
+  } catch (e) {
+    console.warn(`[ai-index] ${provider} summarize failed for ${file}: ${e.message}`);
+  }
+
+  return {
+    path: file,
+    language,
+    summary: llm.summary,
+    purpose: llm.purpose,
+    functions,
+    methodNotes: llm.methodNotes,
+    dependencies
+  };
+}
+
 export async function runIndexer({ mode = 'incremental', stageOutput = false, projectRoot = process.cwd() } = {}) {
   const configPath = path.join(projectRoot, DEFAULT_CONFIG_FILE);
 
@@ -371,6 +406,9 @@ export async function runIndexer({ mode = 'incremental', stageOutput = false, pr
     return true;
   }
 
+  const ideDirs = await getExistingIdeDirs(projectRoot);
+  const hasIde = ideDirs.length > 0;
+
   const deepseekApiKey = process.env.DEEPSEEK_API_KEY || '';
   const qwenApiKey = process.env.QWEN_API_KEY || '';
   
@@ -393,62 +431,22 @@ export async function runIndexer({ mode = 'incremental', stageOutput = false, pr
     model = '';
   }
 
-  const { hasIde } = await ensureIdeSkills(projectRoot);
-  if (hasIde) {
-    console.log('[ai-index] IDE directory detected, skip .ai output generation.');
-    return true;
-  }
-
-  const outDir = path.join(projectRoot, config.outputDir);
-  await fs.mkdir(outDir, { recursive: true });
-
   const results = [];
+  const total = files.length;
+  let completed = 0;
 
-  for (const file of files) {
-    const abs = path.join(projectRoot, file);
-    let content = '';
-    try {
-      content = await fs.readFile(abs, 'utf-8');
-    } catch {
-      continue;
+  for (let i = 0; i < files.length; i += LLM_CONCURRENCY) {
+    const batch = files.slice(i, i + LLM_CONCURRENCY);
+    const batchResults = await Promise.all(
+      batch.map((file) => processFile(file, projectRoot, config, provider, apiKey, baseUrl, model))
+    );
+
+    for (const r of batchResults) {
+      if (r) results.push(r);
     }
 
-    const language = getLanguage(file);
-    const functions = extractFunctions(content, file);
-    const dependencies = extractDependencies(content, file);
-    const truncated = content.slice(0, config.maxFileCharsForLlm || 8000);
-
-    let llm = {
-      summary: `File ${file} (${language}).`,
-      purpose: 'Auto-generated fallback purpose.',
-      methodNotes: functions.map((f) => `${f}: extracted method`)
-    };
-
-    try {
-      llm = await callLlmSummarize({
-        provider,
-        apiKey,
-        baseUrl,
-        model,
-        filePath: file,
-        language,
-        content: truncated,
-        functions,
-        dependencies
-      });
-    } catch (e) {
-      console.warn(`[ai-index] ${provider} summarize failed for ${file}: ${e.message}`);
-    }
-
-    results.push({
-      path: file,
-      language,
-      summary: llm.summary,
-      purpose: llm.purpose,
-      functions,
-      methodNotes: llm.methodNotes,
-      dependencies
-    });
+    completed += batch.length;
+    console.log(`[ai-index] progress: ${Math.min(completed, total)}/${total} files processed`);
   }
 
   const index = {
@@ -459,17 +457,31 @@ export async function runIndexer({ mode = 'incremental', stageOutput = false, pr
     files: results
   };
 
-  const jsonPath = path.join(outDir, config.jsonOutput);
-  const mdPath = path.join(outDir, config.mdOutput);
   const moduleMdOutput = config.moduleMdOutput || 'module-index.md';
   const moduleJsonOutput = config.moduleJsonOutput || 'module-index.json';
+  const moduleIndex = buildModuleIndex(index);
+  const moduleMdContent = toModuleMd(moduleIndex);
+
+  if (hasIde) {
+    await writeIdeSkills(projectRoot, ideDirs, moduleMdContent);
+    console.log('[ai-index] IDE directory detected, skill updated with module index and skip .ai output generation.');
+    if (stageOutput) {
+      console.log('[ai-index] skip .ai output staging because IDE directory is present.');
+    }
+    return true;
+  }
+
+  const outDir = path.join(projectRoot, config.outputDir);
+  await fs.mkdir(outDir, { recursive: true });
+
+  const jsonPath = path.join(outDir, config.jsonOutput);
+  const mdPath = path.join(outDir, config.mdOutput);
   const moduleMdPath = path.join(outDir, moduleMdOutput);
   const moduleJsonPath = path.join(outDir, moduleJsonOutput);
-  const moduleIndex = buildModuleIndex(index);
 
   await fs.writeFile(jsonPath, `${JSON.stringify(index, null, 2)}\n`, 'utf-8');
   await fs.writeFile(mdPath, toMd(index), 'utf-8');
-  await fs.writeFile(moduleMdPath, toModuleMd(moduleIndex), 'utf-8');
+  await fs.writeFile(moduleMdPath, moduleMdContent, 'utf-8');
   await fs.writeFile(moduleJsonPath, `${JSON.stringify(moduleIndex, null, 2)}\n`, 'utf-8');
 
   if (stageOutput) {

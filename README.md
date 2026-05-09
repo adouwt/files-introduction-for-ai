@@ -14,6 +14,7 @@
 - IDE Skill 自动同步（检测到 IDE 目录时）：
   - `.cursor/skills/files-introduction-for-ai/SKILL.md`
   - `.windsurf/skills/files-introduction-for-ai/SKILL.md`
+  - 内容为目标项目模块索引（等同 `module-index.md` 内容）
 - 接入通义千问（OpenAI 兼容接口）生成：
   - 文件功能描述
   - 方法/函数说明
@@ -30,6 +31,7 @@
 - 若存在：自动写入对应 skill 文件，并跳过 `.ai` 索引产物生成
   - `.cursor/skills/files-introduction-for-ai/SKILL.md`
   - `.windsurf/skills/files-introduction-for-ai/SKILL.md`
+  - `SKILL.md` 内容即目标项目的模块索引（`module-index.md` 正文）
 - 若不存在：按默认行为生成 `.ai` 目录中的索引文件
 
 `.ai` 目录中的索引文件属于“项目上下文文件”，可被 AI IDE 当作普通文件读取与引用，但通常不会自动作为平台规则目录生效。
